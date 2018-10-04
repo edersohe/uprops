@@ -12,14 +12,11 @@ var (
 	separatorKV = "="
 	commentChar = "#"
 	eol         = "\n"
-
-	strBase   = ""
-	strCustom = ""
-	strMerge  = ""
 )
 
 func dos2Unix(s string) string {
-	return strings.Replace(strings.Replace(s, "\r\n", eol, -1), "\r", eol, -1)
+	var re = regexp.MustCompile(`(?m:\r\n?`)
+	return re.ReplaceAllString(s, "\n")
 }
 
 func getLines(s string) []string {
@@ -27,7 +24,8 @@ func getLines(s string) []string {
 }
 
 func clean(s string) string {
-	return strings.TrimSpace(strings.Trim(strings.TrimSpace(s), "\t"))
+	var re = regexp.MustCompile(`(?m:(^[ \t]+|[ \t]+$)`)
+	return re.ReplaceAllString(s, "")
 }
 
 func getPropName(s string) string {
@@ -35,7 +33,7 @@ func getPropName(s string) string {
 }
 
 func replace(s string, l string) string {
-	var re = regexp.MustCompile(`(?m:^` + regexp.QuoteMeta(getPropName(l)) + `[\t ]*=.*$)`)
+	var re = regexp.MustCompile(`(?m:^[\t ]*` + regexp.QuoteMeta(getPropName(l)) + `[\t ]*=.*$)`)
 	return re.ReplaceAllString(s, l)
 }
 
@@ -46,12 +44,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	strBase = dos2Unix(args[1])
-	strCustom = dos2Unix(args[2])
-	strMerge = strBase
+	strBase := dos2Unix(args[1])
+	strCustom := dos2Unix(args[2])
+	strMerge := strBase
 
 	for _, l := range getLines(strCustom) {
-		if clean(l) != "" && !strings.HasPrefix(clean(l), commentChar) {
+		l = clean(l)
+		if l != "" && !strings.HasPrefix(l, commentChar) && strings.Contains(l, separatorKV) {
 			strMerge = replace(strMerge, l)
 		}
 	}
